@@ -1,0 +1,14 @@
+{
+  "name": "inonego.UniLua.Tests",
+  "rootNamespace": "inonego.UniLua.Tests",
+  "references": ["UnityEngine.TestRunner", "UnityEditor.TestRunner", "inonego.UniLua"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
