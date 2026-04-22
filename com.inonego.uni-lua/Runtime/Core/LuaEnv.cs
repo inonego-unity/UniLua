@@ -77,6 +77,9 @@ namespace inonego.UniLua
          // Initialize reflection bridge (CS. table)
          bridge = new ObjectBridge(this);
          bridge.Initialize(rawState);
+
+         // Global typeof(x) — C# idiom convenience.
+         RegisterStaticFunction("typeof", TypeofCallback);
       }
 
    #endregion
@@ -537,6 +540,71 @@ namespace inonego.UniLua
          Debug.Log(sb.ToString());
 
          return 0;
+      }
+
+   #endregion
+
+   #region Typeof Callback
+
+      // ------------------------------------------------------------
+      /// <summary>
+      /// Global typeof(x) — returns the System.Type of x.
+      /// Accepts a TypeProxy table, a CLR instance (userdata),
+      /// or a fully-qualified type name string.
+      /// Returns nil on unresolvable input.
+      /// </summary>
+      // ------------------------------------------------------------
+      [MonoPInvokeCallback(typeof(LuaNative.lua_CFunction))]
+      private static int TypeofCallback(IntPtr L)
+      {
+         if (!instances.TryGetValue(L, out var env) || env.bridge == null)
+         {
+            LuaNative.lua_pushnil(L);
+            return 1;
+         }
+
+         if (LuaNative.lua_gettop(L) < 1)
+         {
+            LuaNative.lua_pushnil(L);
+            return 1;
+         }
+
+         try
+         {
+            object arg  = env.bridge.ToCSObject(L, 1);
+            Type   type = null;
+
+            if (arg is Type t)
+            {
+               type = t;
+            }
+            else if (arg is string s)
+            {
+               type = Type.GetType(s, false) ?? env.bridge.ReflectionCache.FindType(s);
+            }
+            else if (arg != null)
+            {
+               type = arg.GetType();
+            }
+
+            if (type == null)
+            {
+               LuaNative.lua_pushnil(L);
+               return 1;
+            }
+
+            // Push as userdata so .FullName, .Name, etc. on the Type
+            // instance are accessible. PushObject would redirect to
+            // TypeProxy (static-member accessor), which lacks those.
+            ObjectWrapper.PushObject(L, env.bridge, type);
+            return 1;
+         }
+         catch (Exception e)
+         {
+            Debug.LogError($"[Lua] typeof error: {e.Message}");
+            LuaNative.lua_pushnil(L);
+            return 1;
+         }
       }
 
    #endregion
